@@ -25,36 +25,42 @@ let config = {
   }
 };
 //Global let
-let bombs;
-let potions;
-let platforms;
-let lava;
-let cursors;
-let pointer;
+let bombs
+let bombCount = 0
+let bomb
+let potions
+let platforms
+let lava
+let cursors
+let pointer
 //Physical params
+let bombX 
+let bombY
+let bombVeloX
+let bombVeloY
 //Player's Velocity
-let veloX = 200;
-let veloY = -650;
-let malusX = 1;
-let malusY = 1;
+let veloX = 200
+let veloY = -650
+let malusX = 1
+let malusY = 1
 //Punch force
-let punchForce = 30000;
+let punchForce = 30000
 //Bombs force
-let bombForceX = 2000 * 2;
-let bombForceY = 500 * 2;
+let bombForceX = 2000 * 2
+let bombForceY = 500 * 2
 //Lava force
-let lavaForce = -1600;
+let lavaForce = -1600
 
 //Player1
-let player1;
+let player1
 //stockera tout les autres joueurs
-let otherPlayers = [];
-let mainPlayerExist = false;
-let otherPlayerExist = false;
-let camera;
-let clientID;
-let input;
-let game = new Phaser.Game(config);
+let otherPlayers = []
+let mainPlayerExist = false
+let otherPlayerExist = false
+let camera
+let clientID
+let input
+let game = new Phaser.Game(config)
 
 
 function preload() {
@@ -98,9 +104,12 @@ function create() {
   //Platforms
   //classic platforms                
   platforms = this.physics.add.staticGroup();
+  //decor = plante,arbre,roche 
   decor = this.physics.add.staticGroup();
   //lava platforms
   lava = this.physics.add.staticGroup();
+  //add physics to the bombs
+  bombs = this.physics.add.group();
   //Function to generate platforms
   function createEarth(name, number, coodX, coodY, xSpacing, ySpacing, type, scale = 0.5) {
     for (let i = 0; i < number; i++) {
@@ -161,13 +170,17 @@ function create() {
   createEarth(decor, 2, -150, -620, 350, 0, 'volcan', 3.0);
   ///////////////////////
   //création des touches 
-  cursors = this.input.keyboard.createCursorKeys();
-  z = this.input.keyboard.addKey("z");
-  q = this.input.keyboard.addKey("q");
-  d = this.input.keyboard.addKey("d");
-  e = this.input.keyboard.addKey("e");
-  m = this.input.keyboard.addKey("m");
-
+  cursors = this.input.keyboard.createCursorKeys()
+  z = this.input.keyboard.addKey("z")
+  q = this.input.keyboard.addKey("q")
+  d = this.input.keyboard.addKey("d")
+  e = this.input.keyboard.addKey("e")
+  m = this.input.keyboard.addKey("m")
+  pointer = this.input.activePointer
+  ////////////////////////
+  //Collision 
+  this.physics.add.collider(bombs, platforms)
+  this.physics.add.collider(bombs, bombs)
   //////////////////////////////
   //Création des anims 
   for (let i = 0; i < 6; i++) {
@@ -176,8 +189,8 @@ function create() {
       frames: this.anims.generateFrameNumbers(`sticky-run${i}`, { start: 0, end: 3 }),
       frameRate: 10,
       repeat: -1
-    });
-  };
+    })
+  }
   for (let i = 0; i < 6; i++) {
     this.anims.create({
       key: `turn${i}`,
@@ -228,7 +241,6 @@ function create() {
         otherPlayer.input = playerInfo.input;
         //pour le test de l'anim
         otherPlayer.state = 5;
-
       }
     });
   });
@@ -254,6 +266,37 @@ function addOtherPlayers(self, playerInfo) {
   self.physics.add.collider(otherPlayer, platforms)
   self.physics.add.collider(otherPlayer, player1)
   otherPlayerExist = true;
+}
+
+///////////////////////
+// Création de bomb
+function fire() {
+  bomb = bombs.create(player1.x, player1.y, 'bomb')
+  bomb.setBounce(0.8)
+  //bomb.setCollideWorldBounds(false)
+  bomb.setVelocity(-(camera._width / 2 - pointer.downX) * 1.5, -(camera._height / 2 - pointer.downY) * 1.5)
+  bomb.allowGravity = false
+  bomb.name = clientID+bombCount
+  bomb.id = clientID
+  bomb.number = bombCount
+  /*
+  console.log(bomb)
+  console.log("bomb id = "+ bomb.id)
+  console.log("bomb id = "+ bomb.number)
+  */
+  bombX = bomb.body.x
+  bombY = bomb.body.y
+  bombVeloX = bomb.body.velocity.x
+  bombVeloY = bomb.body.velocity.y
+  /*
+  console.log("bomb x"+bomb.body.x)
+  console.log("bomb x"+bomb.body.y)
+  console.log("bomb velocity x"+bomb.body.velocity.x)
+  console.log("bomb velocity y"+bomb.body.velocity.y)
+  */
+  setTimeout(() => bomb.destroy(), 4020); 
+  bombCount += 1
+  return(bomb, bombX, bombY, bombVeloX, bombVeloY)
 }
 
 function update() {
@@ -323,23 +366,28 @@ function update() {
       })
     }
     animatedAndMove(player1, input);
-    if(otherPlayerExist){
-      animatedOther();
+    if (otherPlayerExist) {
+      animatedOther()
     }
     if (cursors.up.isDown && player1.body.touching.down) {
       player1.setVelocityY(veloY / malusY);
-    };
+    }
+    //permet de créer les bombes au click
+    if (pointer.justDown) {
+      fire()
+      this.socket.emit('bombs', { x: bombX, y: bombY, vx: bombVeloX, vy: bombVeloY, name: bomb.name, id: clientID})
+    }
     ///////////////////////
     // emit player movement
-    let x = player1.x;
-    let y = player1.y;
+    let x = player1.x
+    let y = player1.y
     if (player1.oldPosition && (x !== player1.oldPosition.x || y !== player1.oldPosition.y)) {
-      this.socket.emit('playerMovement', { x: player1.x, y: player1.y, input: input, id: clientID });
+      this.socket.emit('playerMovement', { x: player1.x, y: player1.y, input: input, id: clientID })
     }
     // save old position data
     player1.oldPosition = {
       x: player1.x,
       y: player1.y
-    };
+    }
   }
-} 
+}

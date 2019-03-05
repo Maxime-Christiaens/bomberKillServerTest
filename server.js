@@ -5,7 +5,6 @@ var io = require('socket.io').listen(server);
 
 var players = {};
 
-
 app.use(express.static(__dirname + '/public'));
 
 app.get('/', function (req, res) {
@@ -49,6 +48,12 @@ io.on('connection', function (socket) {
   });
 });
 
-server.listen(8081, function () {
+// config for heroku
+let port = process.env.PORT;
+if (port == null || port == "") {
+  port = 8081;
+}
+
+server.listen(port, function () {
   console.log(`Listening on ${server.address().port}`);
 });
