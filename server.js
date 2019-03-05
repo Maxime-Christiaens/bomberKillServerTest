@@ -3,7 +3,14 @@ var app = express();
 var server = require('http').Server(app);
 var io = require('socket.io').listen(server);
 
-var players = {};
+let players = {}
+let bomb = {
+  id : "",
+  x : "",
+  y : "",
+  vx : "",
+  vy : ""
+}
 
 app.use(express.static(__dirname + '/public'));
 
@@ -46,6 +53,17 @@ io.on('connection', function (socket) {
     // emit a message to all players about the player that moved
     socket.broadcast.emit('playerMoved', players[socket.id]);
   });
+  
+  socket.on('bombs', function (data){
+    bomb.id = data.id
+    bomb.x = data.x
+    bomb.y = data.y
+    bomb.vx = data.vx
+    bomb.vy = data.vy
+    console.log("bomb id = "+bomb.id)
+    console.log("data id = "+data.id)
+    socket.broadcast.emit('OtherBombs', bomb)
+  })
 });
 
 // config for heroku

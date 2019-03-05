@@ -34,7 +34,7 @@ let lava
 let cursors
 let pointer
 //Physical params
-let bombX 
+let bombX
 let bombY
 let bombVeloX
 let bombVeloY
@@ -214,7 +214,6 @@ function create() {
   otherPlayers = this.physics.add.group();
   this.socket.on('currentPlayers', function (players) {
     clientID = self.socket.id;
-    console.log("id = " + clientID)
     Object.keys(players).forEach(function (id) {
       if (players[id].playerId == clientID) {
         addPlayer(self, players[id]);
@@ -244,6 +243,16 @@ function create() {
       }
     });
   });
+  //récéption des bombs
+  this.socket.on('OtherBombs', function (boom) {
+    console.log("bomb id" + boom.id)
+    bomb = bombs.create(boom.x, boom.y, 'bomb')
+    bomb.body.velocity.x = boom.vx
+    bomb.body.velocity.y = boom.vy
+    bomb.setBounce(0.8)
+    //setTimeout(() => bomb.destroy(), 4020);
+  })
+  
 }
 
 function addPlayer(self, playerInfo) {
@@ -267,7 +276,6 @@ function addOtherPlayers(self, playerInfo) {
   self.physics.add.collider(otherPlayer, player1)
   otherPlayerExist = true;
 }
-
 ///////////////////////
 // Création de bomb
 function fire() {
@@ -276,27 +284,16 @@ function fire() {
   //bomb.setCollideWorldBounds(false)
   bomb.setVelocity(-(camera._width / 2 - pointer.downX) * 1.5, -(camera._height / 2 - pointer.downY) * 1.5)
   bomb.allowGravity = false
-  bomb.name = clientID+bombCount
+  bomb.name = clientID + bombCount
   bomb.id = clientID
   bomb.number = bombCount
-  /*
-  console.log(bomb)
-  console.log("bomb id = "+ bomb.id)
-  console.log("bomb id = "+ bomb.number)
-  */
   bombX = bomb.body.x
   bombY = bomb.body.y
   bombVeloX = bomb.body.velocity.x
   bombVeloY = bomb.body.velocity.y
-  /*
-  console.log("bomb x"+bomb.body.x)
-  console.log("bomb x"+bomb.body.y)
-  console.log("bomb velocity x"+bomb.body.velocity.x)
-  console.log("bomb velocity y"+bomb.body.velocity.y)
-  */
-  setTimeout(() => bomb.destroy(), 4020); 
+  //setTimeout(() => bomb.destroy(), 4020);
   bombCount += 1
-  return(bomb, bombX, bombY, bombVeloX, bombVeloY)
+  return (bomb, bombX, bombY, bombVeloX, bombVeloY)
 }
 
 function update() {
@@ -375,7 +372,7 @@ function update() {
     //permet de créer les bombes au click
     if (pointer.justDown) {
       fire()
-      this.socket.emit('bombs', { x: bombX, y: bombY, vx: bombVeloX, vy: bombVeloY, name: bomb.name, id: clientID})
+      this.socket.emit('bombs', { x: bombX, y: bombY, vx: bombVeloX, vy: bombVeloY, name: bomb.name, id: bomb.id })
     }
     ///////////////////////
     // emit player movement
