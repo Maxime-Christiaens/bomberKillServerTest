@@ -288,6 +288,7 @@ function addOtherPlayers(self, playerInfo) {
 ///////////////////////
 // Création de bomb
 function fire() {
+  if(player1.state >= 0){
   bomb = bombs.create(player1.x, player1.y, 'bomb')
   bomb.setBounce(0.8)
   //bomb.setCollideWorldBounds(false)
@@ -301,6 +302,7 @@ function fire() {
   bombVeloX = bomb.body.velocity.x
   bombVeloY = bomb.body.velocity.y
   bombCount += 1
+  }
   //setTimeout(() => bomb.destroy(), 4020);
   return (bomb, bombX, bombY, bombVeloX, bombVeloY)
 }
