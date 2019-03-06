@@ -291,9 +291,9 @@ function explode(player, bomb) {
             victime.setAccelerationX(0)
         }, 500)
     }
+    explose(player);
     player.state -= 1;
     player.lifeText.setText('vie: ' + player.state);
-    explose(player);
     bomb.anims.play("explosion");
     bombSound.volume = 0.2;
     bombSound.play();

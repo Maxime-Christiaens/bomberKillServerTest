@@ -181,6 +181,8 @@ function create() {
   //Collision 
   this.physics.add.collider(bombs, platforms)
   this.physics.add.collider(bombs, bombs)
+  this.physics.add.collider(bombs, lava)
+
   //////////////////////////////
   //Création des anims 
   for (let i = 0; i < 6; i++) {
@@ -206,6 +208,12 @@ function create() {
       repeat: -1
     });
   };
+  //anim death 
+  this.anims.create({
+    key: "die",
+    frames: [{ key: "cross" }],
+    frameRate: 20
+  });
 
   ///////////////////////////////
   //Communication avec le serveur
@@ -239,7 +247,7 @@ function create() {
         otherPlayer.setPosition(playerInfo.x, playerInfo.y);
         otherPlayer.input = playerInfo.input;
         //pour le test de l'anim
-        otherPlayer.state = 5;
+        otherPlayer.state = 5; // playerInfo.state
       }
     });
   });
@@ -247,12 +255,11 @@ function create() {
   this.socket.on('OtherBombs', function (boom) {
     console.log("bomb id" + boom.id)
     bomb = bombs.create(boom.x, boom.y, 'bomb')
+    bomb.setBounce(0.8)
     bomb.body.velocity.x = boom.vx
     bomb.body.velocity.y = boom.vy
-    bomb.setBounce(0.8)
-    //setTimeout(() => bomb.destroy(), 4020);
+    setTimeout(() => bomb.destroy(), 4020)
   })
-  
 }
 
 function addPlayer(self, playerInfo) {
@@ -264,16 +271,18 @@ function addPlayer(self, playerInfo) {
   player1.setCollideWorldBounds(false)
   self.physics.add.collider(player1, platforms)
   camera = self.cameras.main.startFollow(player1)
-  //
   mainPlayerExist = true
+  //créer les collisions avec les bombs
+  self.physics.add.collider(player1, bombs, explode)
+  self.physics.add.collider(player1, lava)
 }
 
 function addOtherPlayers(self, playerInfo) {
   const otherPlayer = self.add.sprite(playerInfo.x, playerInfo.y, 'dude')
   otherPlayer.playerId = playerInfo.playerId
   otherPlayers.add(otherPlayer)
-  self.physics.add.collider(otherPlayer, platforms)
-  self.physics.add.collider(otherPlayer, player1)
+  self.physics.add.collider(otherPlayers, platforms)
+  self.physics.add.collider(otherPlayers, player1)
   otherPlayerExist = true;
 }
 ///////////////////////
@@ -291,9 +300,58 @@ function fire() {
   bombY = bomb.body.y
   bombVeloX = bomb.body.velocity.x
   bombVeloY = bomb.body.velocity.y
-  //setTimeout(() => bomb.destroy(), 4020);
   bombCount += 1
+  //setTimeout(() => bomb.destroy(), 4020);
   return (bomb, bombX, bombY, bombVeloX, bombVeloY)
+}
+//////////////////////
+//KABOOM
+function explode(player, bomb) {
+  function explose(victime) {
+    let xForce = bombForceX * ((player.x - bomb.x));
+    let yForce = bombForceY * ((player.y - bomb.y));
+    victime.setAccelerationX(xForce);
+    victime.setAccelerationY(yForce);
+    //Créer un variation au cours du temps de l'acceleration
+    setTimeout(() => {
+      victime.setAccelerationY(0)
+    }, 40)
+    setTimeout(() => {
+      victime.setAccelerationX(xForce / 2)
+    }, 250)
+    setTimeout(() => {
+      victime.setAccelerationX(xForce / 3)
+    }, 450)
+    setTimeout(() => {
+      victime.setAccelerationX(0)
+    }, 500)
+  }
+  explose(player)
+  player.state -= 1
+  /*
+  bomb.anims.play("explosion");
+  bombSound.volume = 0.2;
+  bombSound.play();
+  */
+  setTimeout(() => bomb.destroy(), 50);
+  die(player)
+}
+////////////////
+//Die 
+function die(player) {
+  if (player.state < 0) {
+    player.x = 0
+    player.y = 0
+    //player.dieText.visible = true
+    player.body.enable = false
+    player.anims.play("die")
+    /*
+    setTimeout(() => player.body.enable = true, 5000);
+    setTimeout(() => player.dieText.visible = false, 5000);
+    setTimeout(() => player.state = 5, 5000);
+    setTimeout(() => player.lifeText.setText('vie: ' + player.state), 5000);
+    */
+  }
 }
 
 function update() {
@@ -379,12 +437,17 @@ function update() {
     let x = player1.x
     let y = player1.y
     if (player1.oldPosition && (x !== player1.oldPosition.x || y !== player1.oldPosition.y)) {
-      this.socket.emit('playerMovement', { x: player1.x, y: player1.y, input: input, id: clientID })
+      this.socket.emit('playerMovement', { x: player1.x, y: player1.y, input: input, state: player1.state, id: clientID })
     }
     // save old position data
     player1.oldPosition = {
       x: player1.x,
       y: player1.y
+    }
+    //dying condition
+    if (player1.y >= 1440) {
+      player1.state = -5
+      die(player1)
     }
   }
 }
