@@ -55,7 +55,6 @@ let lavaForce = -1600
 let player1
 //stockera tout les autres joueurs
 let otherPlayers = []
-let mainPlayerExist = false
 let otherPlayerExist = false
 let camera
 let clientID
@@ -179,9 +178,9 @@ function create() {
   pointer = this.input.activePointer
   ////////////////////////
   //Collision 
-  this.physics.add.collider(bombs, platforms)
-  this.physics.add.collider(bombs, bombs)
-  this.physics.add.collider(bombs, lava)
+  this.physics.add.collider(bombs, platforms, destroy)
+  this.physics.add.collider(bombs, bombs, destroy)
+  this.physics.add.collider(bombs, lava, destroy)
 
   //////////////////////////////
   //Création des anims 
@@ -257,7 +256,6 @@ function create() {
     bomb.setBounce(0.8)
     bomb.body.velocity.x = boom.vx
     bomb.body.velocity.y = boom.vy
-    setTimeout(() => bomb.destroy(), 4020)
   })
 }
 
@@ -273,7 +271,6 @@ function addPlayer(self, playerInfo) {
   player1.dieText.visible = false;
   self.physics.add.collider(player1, platforms)
   camera = self.cameras.main.startFollow(player1)
-  mainPlayerExist = true
   //créer les collisions avec les bombs
   self.physics.add.collider(player1, bombs, explode)
   self.physics.add.collider(player1, lava, burn)
@@ -370,9 +367,12 @@ function burn(player, lava) {
   lavaRepulse(player)
   die(player)
 }
+function destroy(bomb){
+  setTimeout(() => bomb.destroy(), 4020);
+}
 
 function update() {
-  if (mainPlayerExist) {
+  if (player1) {
     /////////////////////
     //création des input
     if (cursors.left.isDown) {
@@ -468,6 +468,9 @@ function update() {
     if (player1.y >= 1440) {
       player1.state = -5
       die(player1)
+    }
+    if (bomb && bomb.y >= 1440){
+      bomb.destroy();
     }
   }
 }

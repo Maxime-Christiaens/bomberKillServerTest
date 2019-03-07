@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+    <script>
+        function findNextSquare(sq) {
+            // Return the next square if sq if a perfect square, -1 
+            return ( Number.isInteger(Math.sqrt(sq)) ? Math.pow((Math.sqrt(sq)+1), 2) : -1 )
+        }
+        findNextSquare(81)
+        findNextSquare(82)
+    </script>
+</body>
+
+</html>
